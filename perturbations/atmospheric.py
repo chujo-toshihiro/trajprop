@@ -1,0 +1,111 @@
+"""Atmospheric drag perturbation."""
+
+from __future__ import annotations
+
+import numpy as np
+import spiceypy as spice
+
+from ..models.atmosphere import AtmosphereModel
+from ..models.attitude import AttitudeModel
+from ..models.spacecraft import SpacecraftModel, SphericalSpacecraft
+from ..utils.constants import EARTH_ROTATION_RATE
+
+
+class AtmosphericDrag:
+    """Atmospheric drag perturbation.
+
+    Parameters
+    ----------
+    atmosphere : AtmosphereModel
+        Atmospheric density model.
+    spacecraft : SpacecraftModel
+        Spacecraft model.
+    central_body : str
+        Central body name (must be ``"EARTH"``).
+    co_rotating : bool
+        Account for Earth co-rotation when computing relative velocity.
+    et0 : float, optional
+        Ephemeris time at *t* = 0 [s]. Required when ``co_rotating=True``.
+    frame : str, optional
+        Inertial reference frame of the state vector (e.g. ``"J2000"``).
+        Required when ``co_rotating=True``.
+    attitude : AttitudeModel, optional
+        Required for ``FlatPlateSpacecraft``.
+    """
+
+    def __init__(
+        self,
+        atmosphere: AtmosphereModel,
+        spacecraft: SpacecraftModel,
+        central_body: str = "EARTH",
+        co_rotating: bool = True,
+        et0: float | None = None,
+        frame: str | None = None,
+        attitude: AttitudeModel | None = None,
+    ) -> None:
+        if central_body.upper() != "EARTH":
+            raise ValueError(f"only EARTH is supported, got {central_body}.")
+        if co_rotating and (et0 is None or frame is None):
+            raise ValueError("co_rotating=True requires et0 and frame.")
+
+        self.atmosphere = atmosphere
+        self.spacecraft = spacecraft
+        self.central_body = central_body.upper()
+        self.co_rotating = co_rotating
+        self.et0 = et0
+        self.frame = frame
+        self._attitude = attitude
+
+    def compute_acceleration(
+        self,
+        t: float,
+        state: np.ndarray,
+    ) -> np.ndarray:
+        """Compute the aerodynamic acceleration.
+
+        Parameters
+        ----------
+        t : float
+            Elapsed time since the initial epoch [s].
+        state : np.ndarray
+            State vector ``[x, y, z, vx, vy, vz]`` [km, km/s].
+
+        Returns
+        -------
+        np.ndarray
+            Aerodynamic acceleration vector [km/s^2].
+        """
+
+        r, v = state[:3], state[3:]
+        rho = self.atmosphere.density(t, state)
+
+        if self.co_rotating:
+            # Earth rotation vector in IAU_EARTH, transformed to the inertial frame
+            et = self.et0 + t
+            R = spice.pxform("IAU_EARTH", self.frame, et)
+            omega = spice.mxv(R, [0.0, 0.0, EARTH_ROTATION_RATE])
+            v_rel = v - np.cross(omega, r)
+        else:
+            v_rel = v
+
+        v_norm = np.linalg.norm(v_rel)
+        u_v = v_rel / v_norm
+
+        # Specific aerodynamic force factor: 0.5 * rho * v^2 * (A/m)
+        q_am = 0.5 * rho * v_norm**2 * self.spacecraft.area_mass_ratio
+
+        if isinstance(self.spacecraft, SphericalSpacecraft):
+            return -q_am * self.spacecraft.cd * u_v
+
+        if self._attitude is None:
+            raise ValueError("FlatPlateSpacecraft requires an attitude model.")
+
+        normal = self._attitude.get_normal_vector(t, state)
+        cos_theta = abs(np.dot(normal, u_v))
+
+        return -q_am * self.spacecraft.cd * cos_theta * u_v
+
+    def __call__(self, t: float, state: np.ndarray) -> np.ndarray:
+        """Evaluate the aerodynamic acceleration (alias for ``compute_acceleration``)."""
+
+        return self.compute_acceleration(t, state)
