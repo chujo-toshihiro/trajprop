@@ -64,7 +64,6 @@ def main() -> None:
         spacecraft=spacecraft,
         et0=et0,
         frame=frame,
-        attitude=attitude,
     )
     propagator.add_perturbation(drag)
 
@@ -72,7 +71,6 @@ def main() -> None:
         spacecraft=spacecraft,
         et0=et0,
         central_body=central_body,
-        attitude=attitude,
     )
     propagator.add_perturbation(srp)
 

@@ -6,7 +6,6 @@ import numpy as np
 import spiceypy as spice
 
 from ..models.atmosphere import AtmosphereModel
-from ..models.attitude import AttitudeModel
 from ..models.spacecraft import FlatPlateSpacecraft, SpacecraftModel, SpherePlateSpacecraft, SphericalSpacecraft
 from ..utils.constants import EARTH_ROTATION_RATE
 
@@ -29,8 +28,6 @@ class AtmosphericDrag:
     frame : str, optional
         Inertial reference frame of the state vector (e.g. ``"J2000"``).
         Required when ``co_rotating=True``.
-    attitude : AttitudeModel, optional
-        Required for ``FlatPlateSpacecraft``.
     """
 
     def __init__(
@@ -41,7 +38,6 @@ class AtmosphericDrag:
         co_rotating: bool = True,
         et0: float | None = None,
         frame: str | None = None,
-        attitude: AttitudeModel | None = None,
     ) -> None:
         if central_body.upper() != "EARTH":
             raise ValueError(f"only EARTH is supported, got {central_body}.")
@@ -54,7 +50,6 @@ class AtmosphericDrag:
         self.co_rotating = co_rotating
         self.et0 = et0
         self.frame = frame
-        self._attitude = attitude
 
     def compute_acceleration(
         self,
@@ -96,17 +91,15 @@ class AtmosphericDrag:
             return -q_am * self.spacecraft.cd * u_v
 
         if isinstance(self.spacecraft, FlatPlateSpacecraft):
-            attitude = self._attitude if self._attitude is not None else self.spacecraft.attitude
-            if attitude is None:
+            if self.spacecraft.attitude is None:
                 raise ValueError("FlatPlateSpacecraft requires an attitude model.")
-            normal = attitude.get_normal_vector(t, state)
+            normal = self.spacecraft.attitude.get_normal_vector(t, state)
             return self._plate_drag_accel(rho, v_norm, u_v, normal, self.spacecraft.area_mass_ratio, self.spacecraft.cd)
 
         # SpherePlateSpacecraft
-        attitude = self._attitude if self._attitude is not None else self.spacecraft.attitude
-        if attitude is None:
+        if self.spacecraft.attitude is None:
             raise ValueError("SpherePlateSpacecraft plate drag requires an attitude model.")
-        normal = attitude.get_normal_vector(t, state)
+        normal = self.spacecraft.attitude.get_normal_vector(t, state)
         q_am_sphere = 0.5 * rho * v_norm**2 * self.spacecraft.sphere_area_mass_ratio
         a_total = -q_am_sphere * self.spacecraft.cd_sphere * u_v
         a_total += self._plate_drag_accel(rho, v_norm, u_v, normal, self.spacecraft.plate_area_mass_ratio, self.spacecraft.cd_plate)

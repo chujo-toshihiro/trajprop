@@ -5,7 +5,6 @@ from __future__ import annotations
 import numpy as np
 import spiceypy as spice
 
-from ..models.attitude import AttitudeModel
 from ..models.spacecraft import FlatPlateSpacecraft, SpacecraftModel, SpherePlateSpacecraft, SphericalSpacecraft
 from ..utils.constants import (
     AU,
@@ -30,8 +29,6 @@ class SolarRadiationPressure:
         Inertial reference frame.
     use_shadow : bool
         Include cylindrical shadow model.
-    attitude : AttitudeModel, optional
-        Required for ``FlatPlateSpacecraft``.
     """
 
     def __init__(
@@ -41,14 +38,12 @@ class SolarRadiationPressure:
         central_body: str,
         frame: str = "J2000",
         use_shadow: bool = True,
-        attitude: AttitudeModel | None = None,
     ) -> None:
         self.spacecraft = spacecraft
         self.et0 = et0
         self.central_body = central_body.upper()
         self.frame = frame
         self.use_shadow = use_shadow
-        self._attitude = attitude
 
     def compute_acceleration(
         self,
@@ -93,20 +88,18 @@ class SolarRadiationPressure:
             return shadow * cr * pressure * area_mass / 1000.0 * sun_dir
 
         if isinstance(self.spacecraft, FlatPlateSpacecraft):
-            attitude = self._attitude if self._attitude is not None else self.spacecraft.attitude
-            if attitude is None:
+            if self.spacecraft.attitude is None:
                 raise ValueError("FlatPlateSpacecraft requires an attitude model.")
-            normal = attitude.get_normal_vector(t, state)
+            normal = self.spacecraft.attitude.get_normal_vector(t, state)
             return self._plate_srp_accel(
                 shadow, pressure, sun_dir, normal,
                 self.spacecraft.area_mass_ratio, self.spacecraft.ca, self.spacecraft.cs, self.spacecraft.cd_srp,
             )
 
         # SpherePlateSpacecraft
-        attitude = self._attitude if self._attitude is not None else self.spacecraft.attitude
-        if attitude is None:
+        if self.spacecraft.attitude is None:
             raise ValueError("SpherePlateSpacecraft plate SRP requires an attitude model.")
-        normal = attitude.get_normal_vector(t, state)
+        normal = self.spacecraft.attitude.get_normal_vector(t, state)
         a_total = shadow * self.spacecraft.cr_sphere * pressure * self.spacecraft.sphere_area_mass_ratio / 1000.0 * sun_dir
         a_total += self._plate_srp_accel(
             shadow, pressure, sun_dir, normal,
