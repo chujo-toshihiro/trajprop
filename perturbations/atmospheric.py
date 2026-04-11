@@ -7,7 +7,7 @@ import spiceypy as spice
 
 from ..models.atmosphere import AtmosphereModel
 from ..models.attitude import AttitudeModel
-from ..models.spacecraft import SpacecraftModel, SphericalSpacecraft
+from ..models.spacecraft import FlatPlateSpacecraft, SpacecraftModel, SpherePlateSpacecraft, SphericalSpacecraft
 from ..utils.constants import EARTH_ROTATION_RATE
 
 
@@ -91,19 +91,41 @@ class AtmosphericDrag:
         v_norm = np.linalg.norm(v_rel)
         u_v = v_rel / v_norm
 
-        # Specific aerodynamic force factor: 0.5 * rho * v^2 * (A/m)
-        q_am = 0.5 * rho * v_norm**2 * self.spacecraft.area_mass_ratio
-
         if isinstance(self.spacecraft, SphericalSpacecraft):
+            q_am = 0.5 * rho * v_norm**2 * self.spacecraft.area_mass_ratio
             return -q_am * self.spacecraft.cd * u_v
 
-        if self._attitude is None:
-            raise ValueError("FlatPlateSpacecraft requires an attitude model.")
+        if isinstance(self.spacecraft, FlatPlateSpacecraft):
+            attitude = self._attitude if self._attitude is not None else self.spacecraft.attitude
+            if attitude is None:
+                raise ValueError("FlatPlateSpacecraft requires an attitude model.")
+            normal = attitude.get_normal_vector(t, state)
+            return self._plate_drag_accel(rho, v_norm, u_v, normal, self.spacecraft.area_mass_ratio, self.spacecraft.cd)
 
-        normal = self._attitude.get_normal_vector(t, state)
+        # SpherePlateSpacecraft
+        attitude = self._attitude if self._attitude is not None else self.spacecraft.attitude
+        if attitude is None:
+            raise ValueError("SpherePlateSpacecraft plate drag requires an attitude model.")
+        normal = attitude.get_normal_vector(t, state)
+        q_am_sphere = 0.5 * rho * v_norm**2 * self.spacecraft.sphere_area_mass_ratio
+        a_total = -q_am_sphere * self.spacecraft.cd_sphere * u_v
+        a_total += self._plate_drag_accel(rho, v_norm, u_v, normal, self.spacecraft.plate_area_mass_ratio, self.spacecraft.cd_plate)
+        return a_total
+
+    @staticmethod
+    def _plate_drag_accel(
+        rho: float,
+        v_norm: float,
+        u_v: np.ndarray,
+        normal: np.ndarray,
+        area_mass: float,
+        cd: float,
+    ) -> np.ndarray:
+        """Compute the drag acceleration contribution from a flat plate."""
+
+        q_am = 0.5 * rho * v_norm**2 * area_mass
         cos_theta = abs(np.dot(normal, u_v))
-
-        return -q_am * self.spacecraft.cd * cos_theta * u_v
+        return -q_am * cd * cos_theta * u_v
 
     def __call__(self, t: float, state: np.ndarray) -> np.ndarray:
         """Evaluate the aerodynamic acceleration (alias for ``compute_acceleration``)."""

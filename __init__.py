@@ -15,7 +15,7 @@ from .models.attitude import (
     SRPAttitude,
     VelocityAlignedAttitude,
 )
-from .models.spacecraft import FlatPlateSpacecraft, SpacecraftModel, SphericalSpacecraft
+from .models.spacecraft import FlatPlateSpacecraft, SpacecraftModel, SphericalSpacecraft, SpherePlateSpacecraft
 from .perturbations.atmospheric import AtmosphericDrag
 from .perturbations.j2 import J2Perturbation
 from .perturbations.solar_radiation import SolarRadiationPressure
@@ -39,6 +39,7 @@ __all__ = [
     "SolarRadiationPressure",
     "SpacecraftModel",
     "SphericalSpacecraft",
+    "SpherePlateSpacecraft",
     "SRPAttitude",
     "third_body_acceleration",
     "VelocityAlignedAttitude",

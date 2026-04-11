@@ -6,7 +6,7 @@ import numpy as np
 import spiceypy as spice
 
 from ..models.attitude import AttitudeModel
-from ..models.spacecraft import SpacecraftModel, SphericalSpacecraft
+from ..models.spacecraft import FlatPlateSpacecraft, SpacecraftModel, SpherePlateSpacecraft, SphericalSpacecraft
 from ..utils.constants import (
     AU,
     LAMBERTIAN_COEFFICIENT,
@@ -86,29 +86,52 @@ class SolarRadiationPressure:
 
         # Solar pressure scaled to the current Sun distance
         pressure = SOLAR_PRESSURE_1AU * (AU / d_sun) ** 2
-        area_mass = self.spacecraft.area_mass_ratio
 
         if isinstance(self.spacecraft, SphericalSpacecraft):
             cr = self.spacecraft.cr
+            area_mass = self.spacecraft.area_mass_ratio
             return shadow * cr * pressure * area_mass / 1000.0 * sun_dir
 
-        if self._attitude is None:
-            raise ValueError("FlatPlateSpacecraft requires an attitude model.")
+        if isinstance(self.spacecraft, FlatPlateSpacecraft):
+            attitude = self._attitude if self._attitude is not None else self.spacecraft.attitude
+            if attitude is None:
+                raise ValueError("FlatPlateSpacecraft requires an attitude model.")
+            normal = attitude.get_normal_vector(t, state)
+            return self._plate_srp_accel(
+                shadow, pressure, sun_dir, normal,
+                self.spacecraft.area_mass_ratio, self.spacecraft.ca, self.spacecraft.cs, self.spacecraft.cd_srp,
+            )
 
-        ca = self.spacecraft.ca
-        cs = self.spacecraft.cs
-        cd_srp = self.spacecraft.cd_srp
+        # SpherePlateSpacecraft
+        attitude = self._attitude if self._attitude is not None else self.spacecraft.attitude
+        if attitude is None:
+            raise ValueError("SpherePlateSpacecraft plate SRP requires an attitude model.")
+        normal = attitude.get_normal_vector(t, state)
+        a_total = shadow * self.spacecraft.cr_sphere * pressure * self.spacecraft.sphere_area_mass_ratio / 1000.0 * sun_dir
+        a_total += self._plate_srp_accel(
+            shadow, pressure, sun_dir, normal,
+            self.spacecraft.plate_area_mass_ratio, self.spacecraft.ca, self.spacecraft.cs, self.spacecraft.cd_srp,
+        )
+        return a_total
 
-        normal = self._attitude.get_normal_vector(t, state)
+    @staticmethod
+    def _plate_srp_accel(
+        shadow: float,
+        pressure: float,
+        sun_dir: np.ndarray,
+        normal: np.ndarray,
+        area_mass: float,
+        ca: float,
+        cs: float,
+        cd_srp: float,
+    ) -> np.ndarray:
+        """Compute the SRP acceleration contribution from a flat plate."""
+
         s_dot_n = np.dot(sun_dir, normal)
         abs_s_dot_n = abs(s_dot_n)
-
-        # Specific force scale: (pressure * A/m) converted to km/s^2
         pressure_am = pressure * area_mass / 1000.0
-
         s_component = abs_s_dot_n * (ca + cd_srp) * sun_dir
         n_component = s_dot_n * (LAMBERTIAN_COEFFICIENT * cd_srp + 2.0 * cs * abs_s_dot_n) * normal
-
         return -shadow * pressure_am * (s_component + n_component)
 
     def _shadow_factor(
