@@ -2,12 +2,29 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Protocol
 
 import numpy as np
 from scipy.integrate import solve_ivp
 
 from .gravity import gravity_acceleration, third_body_acceleration
+
+
+@dataclass
+class PropagationResult:
+    """Result of a trajectory propagation.
+
+    Attributes
+    ----------
+    times : np.ndarray
+        Time points [s].
+    states : np.ndarray
+        Trajectory states at each time point ``[km, km/s]``.
+    """
+
+    times: np.ndarray
+    states: np.ndarray
 
 
 class Perturbation(Protocol):
@@ -131,23 +148,26 @@ class Propagator:
     def propagate(
         self,
         initial_state: np.ndarray,
-        t_eval: np.ndarray,
+        t_span: tuple[float, float],
         et0: float,
+        t_eval: np.ndarray | None = None,
         ivp_method: str = "RK45",
         rtol: float = 1e-8,
         atol: float = 1e-10,
         **integrator_options: object,
-    ) -> np.ndarray:
+    ) -> PropagationResult:
         """Propagate a spacecraft trajectory.
 
         Parameters
         ----------
         initial_state : np.ndarray
             Initial state ``[x, y, z, vx, vy, vz]`` [km, km/s].
-        t_eval : np.ndarray
-            Evaluation time points [s].
+        t_span : tuple[float, float]
+            Integration interval ``(t0, tf)`` [s].
         et0 : float
             Initial epoch (SPICE ephemeris time) [s].
+        t_eval : np.ndarray or None, optional
+            Specific time points at which to store the solution [s].
         ivp_method : str, optional
             Integration method for ``solve_ivp`` (default: ``"RK45"``).
         rtol : float, optional
@@ -159,15 +179,13 @@ class Propagator:
 
         Returns
         -------
-        np.ndarray
-            Trajectory states at each evaluation time [km, km/s].
+        PropagationResult
+            Result containing ``times`` [s] and ``states`` [km, km/s].
         """
 
-        t_min = t_eval[0]
-        t_max = t_eval[-1]
         solution = solve_ivp(
             self.dynamics,
-            (t_min, t_max),
+            t_span,
             initial_state,
             t_eval=t_eval,
             method=ivp_method,
@@ -176,4 +194,4 @@ class Propagator:
             args=(et0,),
             **integrator_options,
         )
-        return solution.y.T
+        return PropagationResult(times=solution.t, states=solution.y.T)

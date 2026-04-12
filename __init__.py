@@ -1,7 +1,7 @@
 """Spacecraft trajectory propagation with gravity and perturbations."""
 
 from .core.gravity import gravity_acceleration, third_body_acceleration
-from .core.propagator import Propagator
+from .core.propagator import PropagationResult, Propagator
 from .models.atmosphere import (
     AtmosphereModel,
     ExponentialAtmosphere,
@@ -34,6 +34,7 @@ __all__ = [
     "J2Perturbation",
     "NormalVectorAttitude",
     "NRLMSISEAtmosphere",
+    "PropagationResult",
     "Propagator",
     "SimpleTableAtmosphere",
     "SolarRadiationPressure",

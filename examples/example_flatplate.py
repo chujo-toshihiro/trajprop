@@ -16,6 +16,7 @@ from trajprop import (
     ExponentialAtmosphere,
     FlatPlateSpacecraft,
     J2Perturbation,
+    PropagationResult,
     Propagator,
     SolarRadiationPressure,
     VelocityAlignedAttitude,
@@ -37,6 +38,7 @@ def main() -> None:
     et0 = spice.utc2et(start_time_str)
 
     state0 = np.array([0.0, 0.0, 7000.0, 7.5, 0.0, 0.0])
+    t_span = (0.0, 86400.0)
     t_eval = np.linspace(0, 86400, 1000)
 
     attitude = VelocityAlignedAttitude(cone_angle=0.0, clock_angle=0.0)
@@ -74,15 +76,16 @@ def main() -> None:
     )
     propagator.add_perturbation(srp)
 
-    solution = propagator.propagate(
+    result = propagator.propagate(
         initial_state=state0,
-        t_eval=t_eval,
+        t_span=t_span,
         et0=et0,
+        t_eval=t_eval,
     )
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection="3d")
-    ax.plot(solution[:, 0], solution[:, 1], solution[:, 2])
+    ax.plot(result.states[:, 0], result.states[:, 1], result.states[:, 2])
 
     # Earth sphere
     r_earth = get_body_radius(central_body)
@@ -99,8 +102,8 @@ def main() -> None:
     ax.grid(True)
 
     # Equal-aspect scaling for the 3-D orbit plot
-    xyz_min = np.min(solution[:, :3], axis=0)
-    xyz_max = np.max(solution[:, :3], axis=0)
+    xyz_min = np.min(result.states[:, :3], axis=0)
+    xyz_max = np.max(result.states[:, :3], axis=0)
     max_range = np.max(xyz_max - xyz_min)
     mid = (xyz_max + xyz_min) / 2.0
     ax.set_xlim(mid[0] - max_range / 2.0, mid[0] + max_range / 2.0)
