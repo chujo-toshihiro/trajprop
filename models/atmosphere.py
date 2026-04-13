@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import bisect
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 import numpy as np
 import pymsis
@@ -151,7 +152,9 @@ class NRLMSISEAtmosphere(AtmosphereModel):
         ap = 4.0
 
         output = pymsis.calculate(
-            dates=spice.et2utc(et, "ISOC", 3).datetime,
+            dates=datetime.fromisoformat(
+                spice.et2utc(et, "ISOC", 3).replace("Z", "+00:00")
+            ),
             lons=lon,
             lats=lat,
             alts=alt,
