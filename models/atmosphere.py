@@ -163,4 +163,4 @@ class NRLMSISEAtmosphere(AtmosphereModel):
             aps=ap,
         )
 
-        return output[0, 0, 0, 0, 0]
+        return float(output[0, 0])
