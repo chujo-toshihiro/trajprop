@@ -1,11 +1,11 @@
 """Perturbation models for trajectory propagation."""
 
 from .atmospheric import AtmosphericDrag
-from .j2 import J2Perturbation
+from .gravity import GravityPerturbation
 from .solar_radiation import SolarRadiationPressure
 
 __all__ = [
     "AtmosphericDrag",
-    "J2Perturbation",
+    "GravityPerturbation",
     "SolarRadiationPressure",
 ]

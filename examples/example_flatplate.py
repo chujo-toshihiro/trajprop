@@ -15,7 +15,7 @@ from trajprop import (
     AtmosphericDrag,
     ExponentialAtmosphere,
     FlatPlateSpacecraft,
-    J2Perturbation,
+    GravityPerturbation,
     PropagationResult,
     Propagator,
     SolarRadiationPressure,
@@ -58,7 +58,7 @@ def main() -> None:
         frame=frame,
     )
 
-    j2 = J2Perturbation(et0=et0)
+    j2 = GravityPerturbation(et0=et0)
     propagator.add_perturbation(j2)
 
     drag = AtmosphericDrag(

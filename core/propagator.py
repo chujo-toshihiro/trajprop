@@ -103,10 +103,10 @@ class Propagator:
             If the perturbation is incompatible with the central body.
         """
 
-        if type(perturbation).__name__ in ("J2Perturbation", "AtmosphericDrag"):
+        if type(perturbation).__name__ in ("GravityPerturbation", "AtmosphericDrag"):
             if self.central_body.upper() != "EARTH":
                 raise ValueError(
-                    "J2Perturbation and AtmosphericDrag are only supported for central_body='EARTH'."
+                    "GravityPerturbation and AtmosphericDrag are only supported for central_body='EARTH'."
                 )
         self.perturbations.append(perturbation)
 

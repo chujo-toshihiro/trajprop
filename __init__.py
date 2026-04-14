@@ -17,7 +17,7 @@ from .models.attitude import (
 )
 from .models.spacecraft import FlatPlateSpacecraft, SpacecraftModel, SphericalSpacecraft, SpherePlateSpacecraft
 from .perturbations.atmospheric import AtmosphericDrag
-from .perturbations.j2 import J2Perturbation
+from .perturbations.gravity import GravityPerturbation
 from .perturbations.solar_radiation import SolarRadiationPressure
 from .utils import get_body_radius, get_mu, init_spice
 
@@ -29,9 +29,9 @@ __all__ = [
     "FlatPlateSpacecraft",
     "get_body_radius",
     "get_mu",
+    "GravityPerturbation",
     "gravity_acceleration",
     "init_spice",
-    "J2Perturbation",
     "NormalVectorAttitude",
     "NRLMSISEAtmosphere",
     "PropagationResult",

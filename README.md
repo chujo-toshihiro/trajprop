@@ -12,8 +12,7 @@ with attitude-dependent effects and SPICE ephemeris data.
 ## Features
 
 - **Gravity models** — Central body and third-body gravitational effects
-- **Perturbations** — J2 oblateness, atmospheric drag, solar radiation
-  pressure
+- **Perturbations** — Nonspherical gravity (J2 / EGM2008), atmospheric drag, solar radiation pressure
 - **Attitude models** — Velocity-aligned, Sun-aligned, fixed normal vector
 - **Spacecraft models** — Spherical (cannonball) and flat plate geometries
 - **Atmosphere models** — Exponential, table-based, NRLMSISE-00
@@ -25,6 +24,7 @@ with attitude-dependent effects and SPICE ephemeris data.
 - NumPy >= 1.20
 - SciPy >= 1.7
 - spiceypy
+- pyshtools >= 4.10 (optional, for `model="EGM2008"`)
 - pymsis (optional, for NRLMSISE-00)
 
 ## Installation
@@ -33,7 +33,7 @@ with attitude-dependent effects and SPICE ephemeris data.
 conda create -n trajectory python=3.9
 conda activate trajectory
 conda install numpy scipy matplotlib
-pip install spiceypy pymsis
+pip install spiceypy pymsis pyshtools
 ```
 
 ### SPICE Kernels
@@ -57,7 +57,7 @@ from trajprop import (
     SphericalSpacecraft,
     ExponentialAtmosphere,
     AtmosphericDrag,
-    J2Perturbation,
+    GravityPerturbation,
     init_spice,
 )
 
@@ -78,7 +78,7 @@ propagator = Propagator(
 )
 
 # Add perturbations
-j2 = J2Perturbation(et0=et0)
+j2 = GravityPerturbation(et0=et0)
 propagator.add_perturbation(j2)
 
 drag = AtmosphericDrag(
@@ -146,7 +146,7 @@ python examples/example_flatplate.py
 
 ### Perturbations
 
-- `J2Perturbation` — Earth oblateness perturbation
+- `GravityPerturbation` — Earth oblateness perturbation (J2 or EGM2008)
 - `AtmosphericDrag` — Aerodynamic drag
 - `SolarRadiationPressure` — Solar radiation pressure
 
@@ -170,7 +170,7 @@ trajprop/
 │   ├── gravity.py           # Gravitational acceleration
 │   └── propagator.py        # Main propagator class
 ├── perturbations/
-│   ├── j2.py                # J2 perturbation
+│   ├── gravity.py           # Nonspherical gravity (J2 / EGM2008)
 │   ├── atmospheric.py       # Atmospheric drag/lift
 │   └── solar_radiation.py   # Solar radiation pressure
 ├── models/
