@@ -87,7 +87,7 @@ class AtmosphericDrag:
         u_v = v_rel / v_norm
 
         if isinstance(self.spacecraft, SphericalSpacecraft):
-            q_am = 0.5 * rho * v_norm**2 * self.spacecraft.area_mass_ratio
+            q_am = 0.5 * rho * v_norm**2 * self.spacecraft.area_mass_ratio * 1e3
             return -q_am * self.spacecraft.cd * u_v
 
         if isinstance(self.spacecraft, FlatPlateSpacecraft):
@@ -100,7 +100,7 @@ class AtmosphericDrag:
         if self.spacecraft.attitude is None:
             raise ValueError("SpherePlateSpacecraft plate drag requires an attitude model.")
         normal = self.spacecraft.attitude.get_normal_vector(t, state)
-        q_am_sphere = 0.5 * rho * v_norm**2 * self.spacecraft.sphere_area_mass_ratio
+        q_am_sphere = 0.5 * rho * v_norm**2 * self.spacecraft.sphere_area_mass_ratio * 1e3
         a_total = -q_am_sphere * self.spacecraft.cd_sphere * u_v
         a_total += self._plate_drag_accel(rho, v_norm, u_v, normal, self.spacecraft.plate_area_mass_ratio, self.spacecraft.cd_plate)
         return a_total
@@ -116,7 +116,7 @@ class AtmosphericDrag:
     ) -> np.ndarray:
         """Compute the drag acceleration contribution from a flat plate."""
 
-        q_am = 0.5 * rho * v_norm**2 * area_mass
+        q_am = 0.5 * rho * v_norm**2 * area_mass * 1e3
         cos_theta = abs(np.dot(normal, u_v))
         return -q_am * cd * cos_theta * u_v
 
