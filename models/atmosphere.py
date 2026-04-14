@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 import numpy as np
-import pymsis
 import spiceypy as spice
 
 from ..utils.constants import EARTH_FLATTENING, get_body_radius
@@ -150,6 +149,14 @@ class NRLMSISEAtmosphere(AtmosphereModel):
         f107a = 150.0
         f107 = 150.0
         ap = 4.0
+
+        try:
+            import pymsis
+        except ImportError as exc:
+            raise ImportError(
+                "pymsis is required for NRLMSISEAtmosphere."
+                " install it with: pip install pymsis"
+            ) from exc
 
         output = pymsis.calculate(
             dates=datetime.fromisoformat(
