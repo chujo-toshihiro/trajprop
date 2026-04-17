@@ -20,7 +20,7 @@ with attitude-dependent effects and SPICE ephemeris data.
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.10+
 - NumPy >= 1.20
 - SciPy >= 1.7
 - spiceypy
@@ -30,7 +30,7 @@ with attitude-dependent effects and SPICE ephemeris data.
 ## Installation
 
 ```bash
-conda create -n trajectory python=3.9
+conda create -n trajectory python=3.11
 conda activate trajectory
 conda install numpy scipy matplotlib
 pip install spiceypy pymsis pyshtools
