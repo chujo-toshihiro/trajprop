@@ -67,6 +67,7 @@ init_spice("spice_kernels")
 # Setup
 et0 = spice.utc2et("2024-01-01T00:00:00")
 state0 = np.array([0.0, 0.0, 7000.0, 7.5, 0.0, 0.0])  # [km, km/s]
+t_span = (0.0, 86400.0)  # [s]
 t_eval = np.linspace(0, 86400, 1000)  # [s]
 
 # Create spacecraft and propagator
@@ -92,6 +93,7 @@ propagator.add_perturbation(drag)
 # Propagate
 solution = propagator.propagate(
     initial_state=state0,
+    t_span=t_span,
     t_eval=t_eval,
     et0=et0,
 )
