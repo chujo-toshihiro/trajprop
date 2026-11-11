@@ -85,7 +85,7 @@ class SolarRadiationPressure:
         if isinstance(self.spacecraft, SphericalSpacecraft):
             cr = self.spacecraft.cr
             area_mass = self.spacecraft.area_mass_ratio
-            return shadow * cr * pressure * area_mass / 1000.0 * sun_dir
+            return -shadow * cr * pressure * area_mass / 1000.0 * sun_dir
 
         if isinstance(self.spacecraft, FlatPlateSpacecraft):
             if self.spacecraft.attitude is None:
@@ -100,7 +100,7 @@ class SolarRadiationPressure:
         if self.spacecraft.attitude is None:
             raise ValueError("SpherePlateSpacecraft plate SRP requires an attitude model.")
         normal = self.spacecraft.attitude.get_normal_vector(t, state)
-        a_total = shadow * self.spacecraft.cr_sphere * pressure * self.spacecraft.sphere_area_mass_ratio / 1000.0 * sun_dir
+        a_total = -shadow * self.spacecraft.cr_sphere * pressure * self.spacecraft.sphere_area_mass_ratio / 1000.0 * sun_dir
         a_total += self._plate_srp_accel(
             shadow, pressure, sun_dir, normal,
             self.spacecraft.plate_area_mass_ratio, self.spacecraft.ca, self.spacecraft.cs, self.spacecraft.cd_srp,
